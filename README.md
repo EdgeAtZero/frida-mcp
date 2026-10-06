@@ -11,6 +11,11 @@ TypeScript MCP server for Frida 17 dynamic instrumentation. Provides ~63 tools a
 > AI-authored changes are identifiable in the history. Upstream remains the
 > canonical project; prefer it unless you specifically need what this fork adds.
 
+## What's new in 1.3.0
+
+- **Router-only mode** (`--router-only`, or `FRIDA_MCP_ROUTER_ONLY=1`): publish `search_tools`, `describe_tool` and `execute_tool` instead of every tool, so the advertised schema stops growing with the tool count — 63 tools at ~38 KB become 3 tools at ~1.8 KB, about 21x smaller on every request. The tool modules are untouched and a routed call returns exactly what a direct call returns.
+- Registration moved into `src/surface.ts`, so the entry point, router mode and the test suite publish one shared surface instead of each keeping a copy of the list.
+
 ## What's new in 1.2.0
 
 - **`connect_remote_device`**: register a remote `frida-server` as a device and get back the id to pass as `device_id` to every other tool. Covers the full `RemoteDeviceOptions` surface — `token`, `certificate`, `origin`, `keepalive_interval`. A network-exposed server was previously unreachable: `get_device` only looks up already-known devices and never opens a connection.
@@ -132,6 +137,21 @@ result is identical. Two behaviours differ, both in how failures are reported:
   names the tool, so it cannot be mistaken for a router failure.
 
 Resources are published in both modes; only the tool surface changes.
+
+### Teaching the client the convention
+
+Router-only mode moves the how-to out of the tool list, so the client needs to
+learn `search → describe → execute` from somewhere. The three tool descriptions
+are self-sufficient for that.
+
+For the operational layer — docs-first usage, script lifecycle hygiene, the
+`Idea → Scripting → Execution → Notes` discipline — start from the upstream
+companion skill [`frida-mcp-workflow`](https://github.com/yfe404/frida-mcp-skills)
+and have your agent adapt it. Its instructions name the tools directly, so under
+router mode each call becomes `execute_tool` with a `tool`/`arguments` pair;
+that rewrite is the only change router mode requires. Adapting it per user is
+deliberate: this fork documents the approach rather than vendoring a skill of
+its own.
 
 ## Tool Reference
 

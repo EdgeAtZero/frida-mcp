@@ -4,7 +4,11 @@ All notable changes to `frida-mcp` are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.0] — 2026-10-06
+
+One opt-in feature. Default behaviour is unchanged: without the flag the
+server publishes every tool exactly as before, and no tool changes its
+parameters or result shape.
 
 ### Added
 
