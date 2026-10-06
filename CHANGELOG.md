@@ -4,6 +4,25 @@ All notable changes to `frida-mcp` are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] — 2026-10-06
+
+### Fixed
+
+- `apk_manifest` came back with everything but `package` empty when run against
+  build-tools 37. Its `aapt2 dump xmltree` prints the namespace as a full URI —
+  `A: http://schemas.android.com/apk/res/android:versionCode(0x0101021b)=1` —
+  where older build-tools printed a prefix, `A: android:versionCode(...)=1`. The
+  attribute pattern only matched the prefix form, so every namespaced attribute
+  was dropped silently: `versionName`, `versionCode`, `compileSdk`, `minSdk`,
+  `targetSdk`, the permissions and every component were all lost while the tool
+  still reported success. Both shapes are now normalized to `prefix:name`, a URI
+  contributing its last path segment as the prefix.
+
+  Covered by `test/unit/aapt-manifest.test.ts`, which parses a verbatim capture
+  of build-tools 37 output (`test/fixtures/manifest-aapt2-37.txt`). The previous
+  suite never parsed real `aapt2` output at all, which is why this went
+  unnoticed.
+
 ## [1.3.0] — 2026-10-06
 
 One opt-in feature. Default behaviour is unchanged: without the flag the

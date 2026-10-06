@@ -21,7 +21,7 @@ const ROUTER_ONLY = process.argv.includes("--router-only") || process.env.FRIDA_
 async function main() {
   const server = new McpServer({
     name: "frida",
-    version: "1.3.0",
+    version: "1.3.1",
   });
 
   const captured = registerServerSurface(server, ROUTER_ONLY);

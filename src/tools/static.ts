@@ -87,6 +87,56 @@ interface AaptManifest {
 }
 
 /**
+ * Split an `A:` attribute line into a `prefix:name` key and its value.
+ *
+ * aapt2 has emitted two shapes for the same attribute:
+ *
+ *   A: android:versionCode(0x0101021b)=1
+ *   A: http://schemas.android.com/apk/res/android:versionCode(0x0101021b)=1
+ *
+ * Build-tools 37 uses the second. A prefix-only pattern silently drops every
+ * namespaced attribute — the manifest still parses, but comes back empty apart
+ * from the unnamespaced `package` — so both shapes are normalized here to
+ * `prefix:name`. For a URI the prefix is its last path segment, which is how
+ * the URI form is written by hand anyway: `.../res/android` → `android`,
+ * `.../tools` → `tools`.
+ */
+export function parseAaptAttribute(line: string): { key: string; value: string } | null {
+  const body = line.match(/^\s*A: (.*)$/)?.[1];
+  if (body === undefined) return null;
+
+  // The separator is the first `=` outside parentheses: an attribute id such as
+  // `(0x0101021b)` never contains one, but a value may.
+  let depth = 0;
+  let eq = -1;
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i];
+    if (ch === "(") depth++;
+    else if (ch === ")") depth--;
+    else if (ch === "=" && depth === 0) { eq = i; break; }
+  }
+  if (eq < 0) return null;
+
+  // `name(0x0101021b)` — the id only ever appears on the name.
+  const namePart = body.slice(0, eq).replace(/\(0x[0-9a-fA-F]+\)$/, "");
+  const colon = namePart.lastIndexOf(":");
+  const rawNs = colon >= 0 ? namePart.slice(0, colon) : "";
+  const name = colon >= 0 ? namePart.slice(colon + 1) : namePart;
+  const ns = rawNs.includes("/") ? (rawNs.replace(/\/+$/, "").split("/").pop() ?? "") : rawNs;
+
+  let value = body.slice(eq + 1)
+    .replace(/\s+\(Raw: .*\)\s*$/, "")        // aapt2 echoes string values
+    .replace(/^\(type 0x[0-9a-fA-F]+\)/, "")  // ...and marks typed ones
+    .replace(/\s+\(type 0x[0-9a-fA-F]+\)\s*$/, "")
+    .trim();
+  if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
+    value = value.slice(1, -1);
+  }
+
+  return { key: ns ? `${ns}:${name}` : name, value };
+}
+
+/**
  * Parse `aapt2 dump xmltree` text output into a structured manifest summary.
  *
  * The xmltree format is line-based and indented; we walk it with a stack so
@@ -104,7 +154,6 @@ export function parseAaptXmlTree(text: string): AaptManifest {
   const stack: StackEntry[] = [];
   const elementRe = /^(\s*)(?:E:|N:|N: android=|N: xmlns=)/;
   const elemStartRe = /^(\s*)E: (\S+) /;
-  const attrRe = /^(\s*)A: (?:[^=]+=)?(?:\(.+?\))?\(?([\w:.-]+)\)?(?:\(0x[0-9a-fA-F]+\))?="?([^"]*)"?\s*(?:\(.+\))?$/;
 
   for (const raw of lines) {
     if (!raw.trim()) continue;
@@ -127,10 +176,9 @@ export function parseAaptXmlTree(text: string): AaptManifest {
     const top = stack[stack.length - 1];
     if (!top) continue;
 
-    const attr = raw.match(attrRe);
+    const attr = parseAaptAttribute(raw);
     if (!attr) continue;
-    const key = attr[2];
-    const value = attr[3];
+    const { key, value } = attr;
     top.attrs[key] = value;
 
     // Promote known attrs as soon as we see them.
