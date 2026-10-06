@@ -2,6 +2,21 @@
 
 TypeScript MCP server for Frida 17 dynamic instrumentation. Provides ~63 tools and 15 resources for attaching to processes, executing scripts, hooking native and Java methods, bypassing SSL pinning and root detection, reading/writing memory, inspecting Java heaps, exporting large captures to disk, pulling APKs and decompiling them with jadx, and searching Frida 17 API documentation — all through the Model Context Protocol.
 
+> **Personal-use AI fork.** This repository is a personal fork of
+> [yfe404/frida-mcp](https://github.com/yfe404/frida-mcp), forked and maintained
+> with an AI coding agent (DeepSeek Harness) for the author's own use. It is
+> **not published to npm** and comes with no support or stability guarantee —
+> see [Setup](#setup) to clone and build it locally. Commits authored by the
+> agent carry a `Co-authored-by: DSH <noreply@deepseek.com>` trailer, so
+> AI-authored changes are identifiable in the history. Upstream remains the
+> canonical project; prefer it unless you specifically need what this fork adds.
+
+## What's new in 1.2.0
+
+- **`connect_remote_device`**: register a remote `frida-server` as a device and get back the id to pass as `device_id` to every other tool. Covers the full `RemoteDeviceOptions` surface — `token`, `certificate`, `origin`, `keepalive_interval`. A network-exposed server was previously unreachable: `get_device` only looks up already-known devices and never opens a connection.
+- **Honest connection reporting**: registration is lazy, so the tool probes once and reports `reachable` with `process_count` or the failure reason; a stale registration is dropped before re-adding so corrected credentials actually take effect; and the probe is bounded to 10s, because a misconfigured transport used to hang until the client timed out.
+- **Portable export-path tests**: `resolveExportPath`'s assertions no longer hard-code POSIX separators, so the suite passes on Windows.
+
 ## What's new in 1.1.0
 
 - **Bootstrap**: one-call `ensure_frida_server` (arch-detect + download + push + launch) and `spawn_and_instrument` (atomic spawn → attach → load → resume) that beats the Android `ActivityManagerService` 10s timeout.
@@ -15,67 +30,64 @@ See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 ## Setup
 
-### Quick install (Claude Code)
+This fork is **not published to npm**, so install it by cloning and building
+locally. (The `frida-mcp` package on npm is stuck at 1.0.0 — upstream never
+published past that — so `npx frida-mcp@latest` would hand you the old build
+without any of the tools listed below.)
+
+### Clone and build
 
 ```bash
-claude mcp add frida-mcp -- npx -y frida-mcp@latest
+git clone https://github.com/EdgeAtZero/frida-mcp.git
+cd frida-mcp
+npm install        # pulls frida; its prebuilt binding ships inside the package
+npm run build      # tsc, then copies the docs index into dist/
 ```
 
-Installs frida-mcp as an MCP server over stdio. Auto-updates on every Claude Code restart.
+### Point your MCP client at the local build
 
-**Scopes:**
+Use an **absolute** path to `dist/index.js`: MCP clients spawn the server with
+their own working directory, so a relative one will not resolve.
 
-```bash
-# Per-user (available in all projects)
-claude mcp add --scope user frida-mcp -- npx -y frida-mcp@latest
-
-# Per-project (shared via .mcp.json, commit to repo)
-claude mcp add --scope project frida-mcp -- npx -y frida-mcp@latest
-```
-
-### Manual `.mcp.json` config
-
-```json
-{
-  "mcpServers": {
-    "frida": {
-      "command": "npx",
-      "args": ["-y", "frida-mcp@latest"]
-    }
-  }
-}
-```
-
-### From source (development)
-
-```bash
-npm install
-npm run fetch-docs   # build docs index (optional but recommended)
-npm run build
-npm start
-```
-
-Then point `.mcp.json` at the local build:
+`.mcp.json`:
 
 ```json
 {
   "mcpServers": {
     "frida": {
       "command": "node",
-      "args": ["/path/to/frida-mcp/dist/index.js"]
+      "args": ["/absolute/path/to/frida-mcp/dist/index.js"]
     }
   }
 }
 ```
 
-Restart Claude Code to pick up the new server.
+Claude Code:
+
+```bash
+claude mcp add frida -- node /absolute/path/to/frida-mcp/dist/index.js
+```
+
+Restart the client to pick up the server.
+
+### Updating
+
+```bash
+cd frida-mcp
+git pull
+npm install
+npm run build
+```
 
 ### Prerequisites
 
 - Node.js 20+
-- Frida 17 (`npm install frida@17`)
-- A USB-connected device (Android phone) for on-device operations
-- `frida-server` running on the target device
+- Frida 17 (installed for you by `npm install`)
+- A device running `frida-server` for on-device operations — either over
+  USB/adb, or exposed on the network and reached through
+  `connect_remote_device`
+- `npm run fetch-docs` refreshes the bundled Frida API doc index; the
+  committed index under `src/docs/` is enough for normal use
 
 ## Tool Reference
 
