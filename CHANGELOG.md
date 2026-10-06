@@ -4,7 +4,10 @@ All notable changes to `frida-mcp` are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.0] — 2026-10-06
+
+A small release: one new device tool plus two portability fixes. No breaking
+changes — every existing tool keeps its parameters and result shape.
 
 ### Added
 
@@ -39,6 +42,14 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Previously such a target was unreachable: `get_device` only looks up
   devices that are already known and never opens a connection, so a bare
   `host:port` answered "Device not found".
+
+### Fixed
+
+- `resolveExportPath` unit tests hard-coded POSIX separators in their
+  expectations, so both assertions failed on Windows even though the
+  implementation was correct: it returns a native path, as `path.join()` /
+  `path.resolve()` should. The expectations now build the path with `join()`
+  and assert on its segments, so the suite passes on every platform.
 
 ## [1.1.0] — 2026-05-27
 
