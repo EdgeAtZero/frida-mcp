@@ -11,6 +11,11 @@ TypeScript MCP server for Frida 17 dynamic instrumentation. Provides ~63 tools a
 > AI-authored changes are identifiable in the history. Upstream remains the
 > canonical project; prefer it unless you specifically need what this fork adds.
 
+## What's new in 1.3.1
+
+- **`apk_manifest` fixed against build-tools 37** — it was returning every field except `package` as empty. Newer `aapt2 dump xmltree` prints namespaces as full URIs (`A: http://schemas.android.com/apk/res/android:versionCode(0x0101021b)=1`) where older builds printed the `android:` prefix, and the attribute pattern only matched the prefix form, so every namespaced attribute was dropped silently while the tool still reported success. Both shapes now normalize to `prefix:name`, a URI contributing its last path segment as the prefix.
+- Covered by a test that parses a verbatim build-tools 37 capture (`test/fixtures/manifest-aapt2-37.txt`) — the suite had never parsed real `aapt2` output.
+
 ## What's new in 1.3.0
 
 - **Router-only mode** (`--router-only`, or `FRIDA_MCP_ROUTER_ONLY=1`): publish `search_tools`, `describe_tool` and `execute_tool` instead of every tool, so the advertised schema stops growing with the tool count — 63 tools at ~38 KB become 3 tools at ~1.8 KB, about 21x smaller on every request. The tool modules are untouched and a routed call returns exactly what a direct call returns.
