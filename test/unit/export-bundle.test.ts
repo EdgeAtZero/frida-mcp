@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, dirname, isAbsolute, join } from "node:path";
 import { tmpdir } from "node:os";
 import {
   appendJsonlRecordSync,
@@ -14,18 +14,25 @@ import {
 describe("resolveExportPath", () => {
   it("creates a default path under session exports when output_path is omitted", () => {
     const now = new Date("2026-02-28T12:34:56.789Z");
-    const resolved = resolveExportPath("/tmp/frida-blobs", "session_1", undefined, now);
+    const baseDir = join(tmpdir(), "frida-blobs");
+    const resolved = resolveExportPath(baseDir, "session_1", undefined, now);
     assert.equal(resolved.generatedDefault, true);
+    // Build the expectation with join() too: the implementation returns a
+    // native path, so a literal POSIX one only holds on POSIX.
     assert.equal(
       resolved.outputPath,
-      "/tmp/frida-blobs/session_1/exports/2026-02-28T12-34-56-789Z-bundle.jsonl",
+      join(baseDir, "session_1", "exports", "2026-02-28T12-34-56-789Z-bundle.jsonl"),
     );
   });
 
   it("uses provided output path when supplied", () => {
     const resolved = resolveExportPath("/tmp/frida-blobs", "session_1", "./out/custom.jsonl");
     assert.equal(resolved.generatedDefault, false);
-    assert.ok(resolved.outputPath.endsWith("/out/custom.jsonl"));
+    // Assert on the resolved path's segments instead of a hard-coded
+    // separator, which Windows does not produce.
+    assert.ok(isAbsolute(resolved.outputPath));
+    assert.equal(basename(resolved.outputPath), "custom.jsonl");
+    assert.equal(basename(dirname(resolved.outputPath)), "out");
   });
 });
 
