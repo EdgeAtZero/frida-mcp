@@ -4,28 +4,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 
-import { registerDeviceTools } from "../../src/tools/device.js";
-import { registerProcessTools } from "../../src/tools/process.js";
-import { registerSessionTools } from "../../src/tools/session.js";
-import { registerScriptMgmtTools } from "../../src/tools/script-mgmt.js";
-import { registerMemoryTools } from "../../src/tools/memory.js";
-import { registerJavaTools } from "../../src/tools/java.js";
-import { registerNativeHookTools } from "../../src/tools/native-hooks.js";
-import { registerDocsTools } from "../../src/tools/docs.js";
-import { registerAndroidTools } from "../../src/tools/android.js";
-import { registerExportTools } from "../../src/tools/export.js";
-import { registerBootstrapTools } from "../../src/tools/bootstrap.js";
-import { registerRecipeTools } from "../../src/tools/recipes.js";
-import { registerProcessInventoryTool } from "../../src/tools/process-inventory.js";
-import { registerAntiDetectionTools } from "../../src/tools/anti-detection.js";
-import { registerStaticTools } from "../../src/tools/static.js";
-import { registerSourceJumpTool } from "../../src/tools/source-jump.js";
-import { registerResources } from "../../src/resources.js";
+import { registerServerSurface } from "../../src/surface.js";
 
 /**
- * Tool counts by module (must stay in sync with `src/index.ts`). The
- * regression cost of a stale absolute count was higher than the value of
- * the assertion, so we derive it from the per-module contribution.
+ * Tool counts by module, kept beside the assertion that uses them. The
+ * registration order itself lives in `src/surface.ts`, so this table cannot
+ * drift from the wiring; it only has to track each module's own tool count.
  */
 const TOOL_COUNTS = {
   device: 5,    // enumerate_devices, get_device, get_usb_device, get_local_device, connect_remote_device
@@ -55,23 +39,7 @@ describe("MCP Server Integration", () => {
   beforeEach(async () => {
     server = new McpServer({ name: "frida-test", version: "1.0.0" });
 
-    registerDeviceTools(server);
-    registerProcessTools(server);
-    registerSessionTools(server);
-    registerScriptMgmtTools(server);
-    registerMemoryTools(server);
-    registerJavaTools(server);
-    registerNativeHookTools(server);
-    registerDocsTools(server);
-    registerAndroidTools(server);
-    registerExportTools(server);
-    registerBootstrapTools(server);
-    registerRecipeTools(server);
-    registerProcessInventoryTool(server);
-    registerAntiDetectionTools(server);
-    registerStaticTools(server);
-    registerSourceJumpTool(server);
-    registerResources(server);
+    registerServerSurface(server);
 
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 

@@ -4,6 +4,35 @@ All notable changes to `frida-mcp` are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+#### Routing
+
+- **Router-only mode** (`--router-only`, or `FRIDA_MCP_ROUTER_ONLY=1`) —
+  advertise `search_tools`, `describe_tool` and `execute_tool` instead of the
+  full tool set, so the schema payload stays constant as the tool count grows.
+  Measured on this release: 3 tools at ~1.8 KB against 63 tools at ~38 KB,
+  about 21x smaller, on every request.
+
+  The tool modules are untouched. Their `server.tool()` registrations are
+  captured by a recording proxy and dispatched by name, so a routed call runs
+  the same handler a direct call would and returns the identical result; the
+  integration suite asserts that equivalence against a real tool. Argument
+  validation still runs, now against the captured schema, and reports failures
+  as an `isError` result listing the offending paths and messages rather than
+  as a protocol-level error. An exception thrown inside a tool is likewise
+  returned as an `isError` result naming the tool, so it cannot be mistaken for
+  a router failure. Resources are published in both modes.
+
+### Changed
+
+- The tool and resource registration list moved out of `src/index.ts` into
+  `src/surface.ts` (`registerAllTools` / `registerServerSurface`). The entry
+  point, router-only mode and the integration tests now publish exactly the
+  same surface instead of each keeping its own copy of the list.
+
 ## [1.2.0] — 2026-10-06
 
 A small release: one new device tool plus two portability fixes. No breaking

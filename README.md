@@ -89,6 +89,50 @@ npm run build
 - `npm run fetch-docs` refreshes the bundled Frida API doc index; the
   committed index under `src/docs/` is enough for normal use
 
+## Router-only mode
+
+Every advertised tool costs schema payload on every request — the full set is
+about 38 KB. Router-only mode publishes three tools instead, near 1.8 KB, and
+stays there however many tools the server grows to.
+
+| Tool | Purpose |
+|------|---------|
+| `search_tools` | Find tools by name/description. Paged, and reports each tool's parameter names plus which are required. |
+| `describe_tool` | Full description and the exact JSON input schema for one tool. |
+| `execute_tool` | Run one tool by name with a JSON `arguments` object. |
+
+Enable it with the flag or the environment variable:
+
+```bash
+node /absolute/path/to/frida-mcp/dist/index.js --router-only
+FRIDA_MCP_ROUTER_ONLY=1 node /absolute/path/to/frida-mcp/dist/index.js
+```
+
+`.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "frida": {
+      "command": "node",
+      "args": ["/absolute/path/to/frida-mcp/dist/index.js", "--router-only"]
+    }
+  }
+}
+```
+
+A routed call runs the same handler a direct call would — the tool modules are
+unchanged, their registrations are captured and dispatched by name — so the
+result is identical. Two behaviours differ, both in how failures are reported:
+
+- Arguments are still validated against the tool's schema, but a mismatch comes
+  back as an `isError` result naming the offending paths, not as a
+  protocol-level error.
+- An exception thrown inside the tool is returned as an `isError` result that
+  names the tool, so it cannot be mistaken for a router failure.
+
+Resources are published in both modes; only the tool surface changes.
+
 ## Tool Reference
 
 ### Device Tools (5)
