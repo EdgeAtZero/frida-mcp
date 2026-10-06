@@ -28,7 +28,7 @@ import { registerResources } from "../../src/resources.js";
  * the assertion, so we derive it from the per-module contribution.
  */
 const TOOL_COUNTS = {
-  device: 4,
+  device: 5,    // enumerate_devices, get_device, get_usb_device, get_local_device, connect_remote_device
   process: 6,
   session: 6,   // create_interactive_session, execute_in_session, get_session_messages, read_session_message_blob, get_archived_session_messages, subscribe_messages
   scriptMgmt: 4,
@@ -126,6 +126,7 @@ describe("MCP Server Integration", () => {
       assert.ok(names.includes("file_ls"));
       assert.ok(names.includes("file_read"));
       assert.ok(names.includes("export_capture_bundle"));
+      assert.ok(names.includes("connect_remote_device"));
     });
   });
 

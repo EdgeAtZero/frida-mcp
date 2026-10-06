@@ -4,6 +4,42 @@ All notable changes to `frida-mcp` are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+#### Devices
+
+- `connect_remote_device` — register a remote `frida-server` as a Frida
+  device through `DeviceManager.addRemoteDevice()` and return its `id` for
+  use as `device_id` by the other tools. This is the only way to reach a
+  target Frida does not auto-discover, such as a `frida-server` exposed on
+  the network instead of reached over USB/adb. Accepts the full
+  `RemoteDeviceOptions` surface: `token` (bearer token), `certificate` (PEM,
+  for a TLS-enabled server), `origin`, and `keepalive_interval`.
+
+  Three `frida` behaviours are worked around, all verified against a real
+  remote `frida-server`:
+
+  - Registration is lazy. `addRemoteDevice` returns without opening a
+    connection, so a closed port or a rejected token still yields a device
+    object — a caller could mistake registration for a working connection.
+    The tool probes once via `enumerateProcesses()` and reports `reachable`
+    with either `process_count` or the probe `error`, leaving the returned
+    id usable either way.
+  - Remote devices are keyed by address and keep the options from the first
+    registration, so re-connecting with corrected credentials silently kept
+    the old ones. The tool now drops any stale registration for the address
+    before adding it, so the requested options always apply.
+  - The probe is bounded to 10s via `Cancellable`. A misconfigured transport
+    — for example a `certificate` aimed at a server that does not speak TLS
+    — otherwise leaves the call hanging until the MCP client times out,
+    reporting nothing about the cause.
+
+  Previously such a target was unreachable: `get_device` only looks up
+  devices that are already known and never opens a connection, so a bare
+  `host:port` answered "Device not found".
+
 ## [1.1.0] — 2026-05-27
 
 A focused round of audit-driven fixes plus a substantial expansion of the

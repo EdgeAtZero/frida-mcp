@@ -1,6 +1,6 @@
 # frida-mcp
 
-TypeScript MCP server for Frida 17 dynamic instrumentation. Provides ~62 tools and 15 resources for attaching to processes, executing scripts, hooking native and Java methods, bypassing SSL pinning and root detection, reading/writing memory, inspecting Java heaps, exporting large captures to disk, pulling APKs and decompiling them with jadx, and searching Frida 17 API documentation — all through the Model Context Protocol.
+TypeScript MCP server for Frida 17 dynamic instrumentation. Provides ~63 tools and 15 resources for attaching to processes, executing scripts, hooking native and Java methods, bypassing SSL pinning and root detection, reading/writing memory, inspecting Java heaps, exporting large captures to disk, pulling APKs and decompiling them with jadx, and searching Frida 17 API documentation — all through the Model Context Protocol.
 
 ## What's new in 1.1.0
 
@@ -79,7 +79,7 @@ Restart Claude Code to pick up the new server.
 
 ## Tool Reference
 
-### Device Tools (4)
+### Device Tools (5)
 
 | Tool | Description | Key Params |
 |------|-------------|------------|
@@ -87,6 +87,7 @@ Restart Claude Code to pick up the new server.
 | `get_device` | Get a specific device by ID | `device_id` |
 | `get_usb_device` | Get the USB-connected device | — |
 | `get_local_device` | Get the local (host) device | — |
+| `connect_remote_device` | Register and probe a remote frida-server, returning the id to pass as `device_id` | `address`, `token?`, `certificate?`, `origin?`, `keepalive_interval?` |
 
 ### Process Tools (6)
 
